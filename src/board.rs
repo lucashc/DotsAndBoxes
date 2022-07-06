@@ -224,6 +224,25 @@ impl Board {
         }
     }
 
+    pub fn check_if_free(&self, potential_move: &Move) -> bool {
+        !self[potential_move.y][potential_move.x][potential_move.direction]
+    }
+
+    pub fn count_owners(&self) -> [u64; 2] {
+        let mut player1 = 0u64;
+        let mut player2 = 0u64;
+        for i in 0..self.size_y {
+            for j in 0..self.size_x {
+                match self[i][j].owner {
+                    Owner::Player1 => player1 += 1,
+                    Owner::Player2 => player2 += 1,
+                    Owner::Empty => continue
+                };
+            }
+        }
+        return [player1, player2];
+    }
+
     pub fn check_consistency(&self) {
         for i in 0..self.size_y {
             for j in 0..self.size_x {

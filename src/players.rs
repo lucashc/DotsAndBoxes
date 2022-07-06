@@ -20,14 +20,19 @@ impl RandomPlayer {
 
 impl Player for RandomPlayer {
     fn make_move(&mut self, board: &Board, owner: Owner) -> Move {
-        let index_x = self.rng.gen_range(0..board.size_x);
-        let index_y = self.rng.gen_range(0..board.size_y);
-        let random_direction: usize = self.rng.gen_range(0..4);
-        Move {
-            x: index_x,
-            y: index_y,
-            owner: owner,
-            direction: Direction::index(random_direction)
+        loop {
+            let index_x = self.rng.gen_range(0..board.size_x);
+            let index_y = self.rng.gen_range(0..board.size_y);
+            let random_direction: usize = self.rng.gen_range(0..4);
+            let potential_move = Move {
+                x: index_x,
+                y: index_y,
+                owner: owner,
+                direction: Direction::index(random_direction)
+            };
+            if board.check_if_free(&potential_move) {
+                return potential_move;
+            }
         }
     }
 }
