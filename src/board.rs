@@ -3,14 +3,24 @@ use std::ops::{Index, IndexMut, Neg};
 use self::Direction::*;
 
 #[derive(Clone, PartialEq, Copy, Debug)]
-pub enum Player {
+pub enum Owner {
     Empty,
     Player1,
     Player2
 }
 
-impl Default for Player {
-    fn default() -> Self { Player::Empty }
+impl Default for Owner {
+    fn default() -> Self { Owner::Empty }
+}
+
+impl Owner {
+    pub fn tick(&mut self) {
+        match self {
+            Owner::Player1 => *self = Owner::Player2,
+            Owner::Player2 => *self = Owner::Player1,
+            Owner::Empty => *self = Owner::Empty
+        };
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -22,8 +32,17 @@ pub enum Direction {
 }
 
 impl Direction {
-    fn iterator() -> impl Iterator<Item = Direction> {
+    pub fn iterator() -> impl Iterator<Item = Direction> {
         [North, South, East, West].iter().copied()
+    }
+    pub fn index(i: usize) -> Direction {
+        match i {
+            0 => North,
+            1 => South,
+            2 => East,
+            3 => West,
+            _ => North
+        }
     }
 }
 
@@ -39,23 +58,33 @@ impl Neg for Direction {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub struct Move {
+    pub x: usize,
+    pub y: usize, 
+    pub direction: Direction,
+    pub owner: Owner
+}
+
 
 #[derive(Clone)]
 pub struct Board {
-    size_x: usize,
-    size_y: usize,
+    pub size_x: usize,
+    pub size_y: usize,
     // First index is row, second is column
     // So first by y, then by x
-    board: Vec<Vec<Tile>>
+    pub board: Vec<Vec<Tile>>,
+
+    pub filled: usize
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct Tile {
-    owner: Player,
-    north: bool,
-    south: bool,
-    west: bool,
-    east: bool
+    pub owner: Owner,
+    pub north: bool,
+    pub south: bool,
+    pub west: bool,
+    pub east: bool
 }
 
 impl Index<Direction> for Tile {
@@ -83,8 +112,8 @@ impl IndexMut<Direction> for Tile {
 
 
 impl Tile {
-    fn resolve(&mut self, player: Player) -> bool{
-        if self.owner == Player::Empty {
+    fn resolve(&mut self, player: Owner) -> bool{
+        if self.owner == Owner::Empty {
             if self.north && self.south && self.west && self.east {
                 self.owner = player;
                 return true;
@@ -92,7 +121,7 @@ impl Tile {
                 return false;
             }
         } else {
-            return true;
+            return false;
         }
     }
 }
@@ -102,7 +131,8 @@ impl Board {
         Board {
             size_x: size_x,
             size_y: size_y,
-            board: vec![vec![Tile::default(); size_x]; size_y]
+            board: vec![vec![Tile::default(); size_x]; size_y],
+            filled: 0
         }
     }
 
@@ -139,8 +169,10 @@ impl Board {
         }
     }
 
-    pub fn make_move(&mut self, player: Player, index_x: usize, index_y: usize, direction: Direction) {
-        let lines_to_be_drawn = match direction {
+    pub fn make_move(&mut self, m: Move) {
+        let index_x = m.x;
+        let index_y = m.y;
+        let lines_to_be_drawn = match m.direction {
             Direction::North => {
                 if index_y > 0 {
                     [(Some((index_x, index_y)), Direction::North),
@@ -183,7 +215,9 @@ impl Board {
             match line.0 {
                 Some((index_x, index_y)) => {
                     self[index_y][index_x][line.1] = true;
-                    self[index_y][index_x].resolve(player);
+                    if self[index_y][index_x].resolve(m.owner) {
+                        self.filled += 1;
+                    };
                 }
                 _ => {}
             };
@@ -251,13 +285,13 @@ impl fmt::Display for Board {
                     write!(f, " ")?;
                 }
                 match self[i][j].owner {
-                    Player::Empty => write!(f, "○")?,
-                    Player::Player1 => write!(f, "█")?,
-                    Player::Player2 => write!(f, "▓")?
+                    Owner::Empty => write!(f, "○")?,
+                    Owner::Player1 => write!(f, "█")?,
+                    Owner::Player2 => write!(f, "▓")?
                 }
                 if j == self.size_x-1 {
                     if self[i][j].east {
-                        write!(f, "-")?;
+                        write!(f, "|")?;
                     } else {
                         write!(f, " ")?;
                     }
