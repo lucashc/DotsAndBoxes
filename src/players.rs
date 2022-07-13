@@ -36,3 +36,34 @@ impl Player for RandomPlayer {
         }
     }
 }
+
+pub struct SemiRandomPlayer {
+    random_player: RandomPlayer
+}
+
+impl SemiRandomPlayer {
+    pub fn new() -> SemiRandomPlayer {
+        SemiRandomPlayer {
+            random_player: RandomPlayer::new()
+        }
+    }
+}
+
+impl Player for SemiRandomPlayer {
+    fn make_move(&mut self, board: &Board, owner: Owner) -> Move {
+        for i in 0..board.size_y {
+            for j in 0..board.size_x {
+                match board[i][j].almost_full() {
+                    Some(direction) => return Move {
+                        x: j,
+                        y: i,
+                        owner: owner,
+                        direction: direction
+                    },
+                    None => continue
+                }
+            }
+        }
+        return self.random_player.make_move(board, owner);
+    }
+}
