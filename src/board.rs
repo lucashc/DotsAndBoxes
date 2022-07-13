@@ -124,6 +124,26 @@ impl Tile {
             return false;
         }
     }
+    pub fn almost_full(&self) -> Option<Direction> {
+        if self.owner == Owner::Empty {
+            let mut count = 0;
+            let mut empty_direction = Direction::North;
+            for direction in Direction::iterator() {
+                if self[direction] {
+                    count += 1;
+                } else {
+                    empty_direction = direction;
+                }
+            }
+            if count == 3 {
+                return Some(empty_direction);
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
 }
 
 impl Board {
